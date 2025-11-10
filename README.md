@@ -1,5 +1,6 @@
 # SSO System
 
+**버전**: 0.1.0
 **통합 인증 시스템 (Single Sign-On)**
 
 모든 애플리케이션을 하나의 인증으로 관리하는 중앙 SSO 시스템
@@ -35,14 +36,20 @@ VTC_Logger    contents-factory
 sso-system/
 ├── supabase/              # Supabase 설정
 │   ├── config.toml
-│   ├── migrations/        # DB 마이그레이션
+│   ├── migrations/        # DB 마이그레이션 (✅ v0.1.0)
+│   │   ├── 20250112000001_initial_schema.sql
+│   │   ├── 20250112000002_auth_codes_table.sql
+│   │   └── 20250112000003_rls_policies.sql
 │   └── seed.sql          # 초기 데이터
-├── sdk/                   # SSO SDK
-│   ├── src/
-│   └── package.json
-├── docs/                  # 문서
-│   ├── architecture.md
-│   └── integration-guide.md
+├── docs/                  # 문서 (✅ v0.1.0)
+│   └── architecture/
+│       ├── README.md
+│       ├── domain-strategy.md
+│       └── integration-guide.md
+├── tasks/                 # PRD 및 Task List (✅ v0.1.0)
+│   ├── prds/
+│   │   └── 0001-prd-supabase-init.md
+│   └── 0001-tasks-supabase-init.md
 └── .env.example
 ```
 
@@ -85,9 +92,10 @@ npm install
 
 ## 📚 문서
 
-- [아키텍처 설계](docs/architecture.md)
-- [통합 가이드](docs/integration-guide.md)
-- [API 레퍼런스](docs/api-reference.md)
+- [아키텍처 가이드](docs/architecture/README.md) - 전체 문서 맵
+- [도메인 전략 가이드](docs/architecture/domain-strategy.md) - 3가지 도메인 시나리오
+- [통합 가이드](docs/architecture/integration-guide.md) - 앱 연동 방법 (A/B/C 사용자 경험)
+- [PRD-0001](tasks/prds/0001-prd-supabase-init.md) - SSO 중앙 인증 서버 설계
 
 ---
 
@@ -95,6 +103,18 @@ npm install
 
 - [VTC_Logger](../VTC_Logger) - 로그 관리 시스템
 - [contents-factory](../contents-factory) - 콘텐츠 관리
+
+---
+
+## 📋 릴리스 노트
+
+### v0.1.0 (2025-01-12)
+- ✅ PRD-0001: SSO 중앙 인증 서버 설계 완료
+- ✅ DB 스키마 마이그레이션 (profiles, apps, auth_codes)
+- ✅ RLS 정책 적용
+- ✅ 도메인 전략 가이드 (3가지 시나리오)
+- ✅ 통합 가이드 (A/B/C 사용자 경험)
+- ✅ Token Exchange 메커니즘 설계
 
 ---
 
