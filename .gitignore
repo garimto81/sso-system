@@ -38,3 +38,5 @@ build/
 *.key
 *.pem
 secrets/
+.env.production
+supabase-*.sql
