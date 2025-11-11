@@ -1,0 +1,842 @@
+openapi: 3.0.3
+info:
+  title: SSO Admin API
+  description: |
+    Admin API for SSO System - Manage applications, API keys, and monitor analytics.
+
+    ## Authentication
+    All endpoints require JWT authentication via Supabase Auth.
+    Include the JWT token in the Authorization header:
+    ```
+    Authorization: Bearer <jwt_token>
+    ```
+
+    ## Admin Role Required
+    All endpoints require the user to have the 'admin' role in their profile.
+
+    ## Rate Limiting
+    - 100 requests per minute per user
+    - Rate limit headers included in responses
+
+    ## Security Features
+    - Bcrypt hashing (10 rounds) for API secrets
+    - Plain secrets shown ONLY ONCE on create/regenerate
+    - Input sanitization (XSS prevention)
+    - Audit logging for all admin actions
+
+  version: 1.0.0
+  contact:
+    name: SSO System Support
+    url: https://github.com/garimto81/sso-system
+
+servers:
+  - url: http://localhost:3001/api/v1
+    description: Local development server
+  - url: https://sso-system.vercel.app/api/v1
+    description: Production server
+
+tags:
+  - name: Apps
+    description: Application management endpoints
+  - name: Analytics
+    description: Analytics and monitoring endpoints
+
+security:
+  - BearerAuth: []
+
+paths:
+  /admin/apps:
+    get:
+      tags:
+        - Apps
+      summary: List all applications
+      description: |
+        Retrieve a paginated list of all registered applications.
+        Supports search, filtering, and sorting.
+      operationId: listApps
+      parameters:
+        - name: search
+          in: query
+          description: Search by app name (case-insensitive)
+          schema:
+            type: string
+            example: "My App"
+        - name: status
+          in: query
+          description: Filter by active/inactive status
+          schema:
+            type: string
+            enum: [active, inactive]
+            example: active
+        - name: page
+          in: query
+          description: Page number (1-indexed)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            example: 1
+        - name: limit
+          in: query
+          description: Items per page (max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            example: 20
+        - name: sort
+          in: query
+          description: Field to sort by
+          schema:
+            type: string
+            enum: [created_at, updated_at, name]
+            default: created_at
+            example: created_at
+        - name: order
+          in: query
+          description: Sort order
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+            example: desc
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  apps:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AppListItem'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    post:
+      tags:
+        - Apps
+      summary: Create new application
+      description: |
+        Register a new application and generate API credentials.
+
+        **IMPORTANT**: The `api_secret` is returned in plain text ONLY ONCE.
+        Save it immediately - it cannot be retrieved later.
+      operationId: createApp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAppRequest'
+      responses:
+        '201':
+          description: App created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "App created successfully"
+                  app:
+                    $ref: '#/components/schemas/AppWithSecret'
+                  warning:
+                    type: string
+                    example: "Save the api_secret now - it will not be shown again"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Owner not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /admin/apps/{id}:
+    get:
+      tags:
+        - Apps
+      summary: Get application details
+      description: Retrieve detailed information about a specific application
+      operationId: getApp
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Application UUID
+          schema:
+            type: string
+            format: uuid
+            example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app:
+                    $ref: '#/components/schemas/AppDetail'
+        '400':
+          description: Invalid app ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: App not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    put:
+      tags:
+        - Apps
+      summary: Update application
+      description: Update application configuration
+      operationId: updateApp
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Application UUID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAppRequest'
+      responses:
+        '200':
+          description: App updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "App updated successfully"
+                  app:
+                    $ref: '#/components/schemas/App'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: App not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    delete:
+      tags:
+        - Apps
+      summary: Delete application
+      description: |
+        Delete an application (soft delete by default).
+
+        **Soft Delete**: Sets `is_active = false`, preserves data
+        **Hard Delete**: Permanently removes app and all related data
+      operationId: deleteApp
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Application UUID
+          schema:
+            type: string
+            format: uuid
+        - name: hard
+          in: query
+          description: Perform hard delete (permanent)
+          schema:
+            type: boolean
+            default: false
+            example: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - confirmation
+              properties:
+                confirmation:
+                  type: string
+                  description: App name to confirm deletion
+                  example: "My App Name"
+      responses:
+        '200':
+          description: App deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "App deleted successfully"
+        '400':
+          description: Invalid request or confirmation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: App not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /admin/apps/{id}/regenerate-secret:
+    post:
+      tags:
+        - Apps
+      summary: Regenerate API secret
+      description: |
+        Generate a new API secret for an application.
+
+        **IMPORTANT**:
+        - The new `api_secret` is returned in plain text ONLY ONCE
+        - Old secret becomes invalid immediately
+        - Update your application configuration immediately
+        - Requires confirmation (app name)
+      operationId: regenerateSecret
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Application UUID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - confirmation
+              properties:
+                confirmation:
+                  type: string
+                  description: App name to confirm regeneration
+                  example: "My App Name"
+      responses:
+        '200':
+          description: Secret regenerated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "API secret regenerated successfully"
+                  api_secret:
+                    type: string
+                    description: New API secret (plain text, shown ONLY ONCE)
+                    example: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2"
+                  warning:
+                    type: string
+                    example: "Update your application configuration immediately"
+        '400':
+          description: Invalid request or confirmation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: App not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /admin/apps/{id}/analytics:
+    get:
+      tags:
+        - Analytics
+      summary: Get app analytics
+      description: Retrieve analytics data for a specific application
+      operationId: getAppAnalytics
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Application UUID
+          schema:
+            type: string
+            format: uuid
+        - name: days
+          in: query
+          description: Number of days to retrieve (default 30, max 365)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 365
+            default: 30
+            example: 30
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppAnalytics'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: App not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /admin/dashboard:
+    get:
+      tags:
+        - Analytics
+      summary: Get dashboard statistics
+      description: Retrieve global statistics across all applications
+      operationId: getDashboard
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardStats'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from Supabase Auth
+
+  schemas:
+    App:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          example: "My Application"
+        description:
+          type: string
+          nullable: true
+          example: "Application description"
+        api_key:
+          type: string
+          format: uuid
+          example: "660e8400-e29b-41d4-a716-446655440001"
+        redirect_urls:
+          type: array
+          items:
+            type: string
+            format: uri
+          example: ["https://myapp.com/callback", "http://localhost:3000/callback"]
+        allowed_origins:
+          type: array
+          items:
+            type: string
+          example: ["https://myapp.com", "http://localhost:3000"]
+        auth_method:
+          type: string
+          enum: [token_exchange, jwt_validation]
+          default: token_exchange
+          example: "token_exchange"
+        is_active:
+          type: boolean
+          example: true
+        owner_id:
+          type: string
+          format: uuid
+          example: "770e8400-e29b-41d4-a716-446655440002"
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-01-11T10:00:00.000Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-01-11T10:00:00.000Z"
+
+    AppWithSecret:
+      allOf:
+        - $ref: '#/components/schemas/App'
+        - type: object
+          properties:
+            api_secret:
+              type: string
+              description: API secret (plain text, shown ONLY ONCE)
+              example: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2"
+
+    AppListItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        api_key:
+          type: string
+          format: uuid
+        auth_method:
+          type: string
+          enum: [token_exchange, jwt_validation]
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        owner:
+          type: object
+          properties:
+            email:
+              type: string
+              format: email
+            display_name:
+              type: string
+              nullable: true
+
+    AppDetail:
+      allOf:
+        - $ref: '#/components/schemas/App'
+        - type: object
+          properties:
+            owner:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                display_name:
+                  type: string
+                  nullable: true
+            stats:
+              type: object
+              properties:
+                total_logins:
+                  type: integer
+                  example: 1523
+                total_users:
+                  type: integer
+                  example: 342
+                last_login_at:
+                  type: string
+                  format: date-time
+                  nullable: true
+                  example: "2025-01-11T09:30:00.000Z"
+
+    CreateAppRequest:
+      type: object
+      required:
+        - name
+        - redirect_urls
+        - owner_email
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          example: "My Application"
+        description:
+          type: string
+          nullable: true
+          example: "Application description"
+        redirect_urls:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            format: uri
+          example: ["https://myapp.com/callback"]
+        allowed_origins:
+          type: array
+          items:
+            type: string
+          example: ["https://myapp.com"]
+        auth_method:
+          type: string
+          enum: [token_exchange, jwt_validation]
+          default: token_exchange
+          example: "token_exchange"
+        owner_email:
+          type: string
+          format: email
+          example: "owner@example.com"
+
+    UpdateAppRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          example: "Updated App Name"
+        description:
+          type: string
+          nullable: true
+          example: "Updated description"
+        redirect_urls:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            format: uri
+          example: ["https://myapp.com/callback"]
+        allowed_origins:
+          type: array
+          items:
+            type: string
+          example: ["https://myapp.com"]
+        is_active:
+          type: boolean
+          example: true
+
+    AppAnalytics:
+      type: object
+      properties:
+        app_id:
+          type: string
+          format: uuid
+        app_name:
+          type: string
+        summary:
+          type: object
+          properties:
+            total_events:
+              type: integer
+              example: 5234
+            total_logins:
+              type: integer
+              example: 1523
+            total_errors:
+              type: integer
+              example: 12
+            unique_users:
+              type: integer
+              example: 342
+        events_by_type:
+          type: array
+          items:
+            type: object
+            properties:
+              event_type:
+                type: string
+              count:
+                type: integer
+        daily_logins:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              count:
+                type: integer
+        top_users:
+          type: array
+          items:
+            type: object
+            properties:
+              user_id:
+                type: string
+                format: uuid
+              email:
+                type: string
+                format: email
+              login_count:
+                type: integer
+        recent_errors:
+          type: array
+          items:
+            type: object
+            properties:
+              event_type:
+                type: string
+              created_at:
+                type: string
+                format: date-time
+              metadata:
+                type: object
+
+    DashboardStats:
+      type: object
+      properties:
+        total_apps:
+          type: integer
+          example: 12
+        active_apps:
+          type: integer
+          example: 10
+        inactive_apps:
+          type: integer
+          example: 2
+        total_logins_today:
+          type: integer
+          example: 523
+        total_users:
+          type: integer
+          example: 1245
+        recent_activity:
+          type: array
+          items:
+            type: object
+            properties:
+              app_id:
+                type: string
+                format: uuid
+              app_name:
+                type: string
+              event_type:
+                type: string
+              created_at:
+                type: string
+                format: date-time
+              user_email:
+                type: string
+                format: email
+                nullable: true
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 156
+        total_pages:
+          type: integer
+          example: 8
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Error message"
+        code:
+          type: string
+          example: "ERROR_CODE"
+
+  responses:
+    BadRequest:
+      description: Bad request (validation error)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Validation error message"
+
+    Unauthorized:
+      description: Unauthorized (missing or invalid token)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Missing or invalid authorization header"
+            code: "UNAUTHORIZED"
+
+    Forbidden:
+      description: Forbidden (admin access required)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Admin access required"
+            code: "INSUFFICIENT_PERMISSIONS"
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Internal server error"
