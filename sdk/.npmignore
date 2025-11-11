@@ -1,0 +1,13 @@
+src/
+tests/
+*.test.ts
+tsconfig.json
+rollup.config.js
+jest.config.js
+.eslintrc.js
+.prettierrc
+node_modules/
+coverage/
+.git/
+.github/
+*.log
