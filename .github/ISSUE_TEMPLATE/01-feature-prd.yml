@@ -1,0 +1,120 @@
+name: 🚀 Feature Request (PRD)
+description: 새로운 기능 요청 및 PRD 작성
+title: "[FEATURE] "
+labels: ["feature", "prd"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 기능 요청서 (PRD Template)
+        새로운 기능에 대한 요구사항을 작성해주세요.
+
+  - type: input
+    id: feature-name
+    attributes:
+      label: 기능 이름
+      description: 간단하고 명확한 기능명
+      placeholder: "예: 사용자 인증 시스템"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: prd-level
+    attributes:
+      label: PRD 상세도
+      description: 작성할 PRD의 상세 수준을 선택하세요
+      options:
+        - MINIMAL (경험 많은 개발자, ~10분)
+        - STANDARD (중급 개발자, ~20-30분)
+        - JUNIOR (초보자, ~40-60분)
+      default: 1
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 해결하려는 문제
+      description: 이 기능이 해결하려는 문제나 니즈는 무엇인가요?
+      placeholder: |
+        예: 현재 사용자들이 매번 로그인해야 하는 불편함이 있습니다.
+        여러 서비스에서 하나의 계정으로 로그인할 수 있는 SSO가 필요합니다.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: 제안하는 솔루션
+      description: 어떻게 이 문제를 해결하고 싶으신가요?
+      placeholder: |
+        예: OAuth 2.0 기반의 중앙 인증 서버를 구축하여
+        모든 서비스가 하나의 로그인으로 접근 가능하도록 합니다.
+    validations:
+      required: true
+
+  - type: textarea
+    id: user-stories
+    attributes:
+      label: 사용자 스토리
+      description: 이 기능을 사용하는 시나리오를 작성해주세요
+      placeholder: |
+        - As a 사용자, I want to 한 번 로그인하면, So that 모든 서비스에 자동 접근할 수 있다
+        - As a 개발자, I want to 인증 로직을 재사용하고, So that 개발 시간을 단축할 수 있다
+      value: |
+        - As a [역할], I want to [행동], So that [목적]
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: 완료 조건 (Acceptance Criteria)
+      description: 이 기능이 완료되었다고 판단하는 기준
+      placeholder: |
+        - [ ] 사용자가 로그인 페이지에서 인증할 수 있다
+        - [ ] 토큰이 안전하게 저장되고 관리된다
+        - [ ] 모든 테스트가 통과한다
+      value: |
+        - [ ]
+        - [ ]
+        - [ ]
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 우선순위
+      options:
+        - 🔴 Critical (즉시)
+        - 🟠 High (이번 스프린트)
+        - 🟡 Medium (다음 스프린트)
+        - 🟢 Low (백로그)
+      default: 2
+
+  - type: textarea
+    id: technical-notes
+    attributes:
+      label: 기술적 고려사항 (선택)
+      description: 특정 기술 스택, 라이브러리, 제약사항 등
+      placeholder: |
+        - Supabase Auth 사용
+        - JWT 토큰 기반
+        - React + TypeScript
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: 의존성 (선택)
+      description: 이 기능을 구현하기 전에 필요한 것들
+      placeholder: |
+        - #123 (데이터베이스 스키마 완료)
+        - Docker 환경 설정
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: 추가 정보
+      description: 스크린샷, 참고 링크, 예시 등
+      placeholder: |
+        참고: https://example.com/docs
+        첨부: 디자인 목업 이미지
