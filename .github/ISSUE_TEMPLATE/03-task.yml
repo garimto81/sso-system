@@ -1,0 +1,114 @@
+name: ✅ Task / Chore
+description: 일반 작업, 유지보수, 개선 작업
+title: "[TASK] "
+labels: ["task"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 작업 요청
+        개발, 리팩토링, 문서화, 설정 등 일반 작업을 요청하세요.
+
+  - type: input
+    id: task-title
+    attributes:
+      label: 작업 제목
+      description: 작업을 간단히 요약해주세요
+      placeholder: "예: Docker 개발 환경 구성"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: task-type
+    attributes:
+      label: 작업 유형
+      options:
+        - 📝 문서화 (Documentation)
+        - 🔧 설정/환경 (Configuration)
+        - ♻️ 리팩토링 (Refactoring)
+        - ⚡ 성능 개선 (Performance)
+        - 🧪 테스트 (Testing)
+        - 🎨 UI/UX 개선 (Design)
+        - 🔒 보안 (Security)
+        - 📦 의존성 업데이트 (Dependencies)
+        - 🧹 코드 정리 (Cleanup)
+        - 🚀 배포/CI/CD (DevOps)
+      default: 0
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 작업 설명
+      description: 무엇을 해야 하는지 상세히 설명해주세요
+      placeholder: |
+        Docker Compose를 사용하여 로컬 개발 환경을 구성합니다.
+        - PostgreSQL 컨테이너
+        - Redis 컨테이너
+        - 애플리케이션 컨테이너
+    validations:
+      required: true
+
+  - type: textarea
+    id: checklist
+    attributes:
+      label: 체크리스트
+      description: 완료해야 할 항목들
+      value: |
+        - [ ]
+        - [ ]
+        - [ ]
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 우선순위
+      options:
+        - 🔴 Critical (즉시)
+        - 🟠 High (이번 스프린트)
+        - 🟡 Medium (다음 스프린트)
+        - 🟢 Low (백로그)
+      default: 2
+
+  - type: textarea
+    id: success-criteria
+    attributes:
+      label: 완료 기준
+      description: 작업이 완료되었다고 판단하는 기준
+      placeholder: |
+        - `docker-compose up` 명령으로 모든 서비스가 정상 실행된다
+        - README에 환경 설정 가이드가 추가된다
+        - 개발팀 전원이 로컬 환경을 구성할 수 있다
+
+  - type: input
+    id: related-issues
+    attributes:
+      label: 관련 Issue/PR
+      description: 이 작업과 관련된 다른 이슈나 PR
+      placeholder: "예: #123, #456"
+
+  - type: textarea
+    id: technical-notes
+    attributes:
+      label: 기술적 참고사항 (선택)
+      description: 특정 기술, 라이브러리, 제약사항 등
+      placeholder: |
+        - Docker Compose v2 사용
+        - 볼륨 마운트로 핫 리로드 지원
+        - 환경변수는 .env.example 참조
+
+  - type: input
+    id: estimated-time
+    attributes:
+      label: 예상 소요 시간 (선택)
+      description: 작업 완료까지 예상되는 시간
+      placeholder: "예: 2시간, 1일, 1주"
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: 추가 정보
+      description: 참고 자료, 링크, 예시 등

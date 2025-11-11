@@ -1,0 +1,122 @@
+name: 🐛 Bug Report
+description: 버그 리포트 및 수정 요청
+title: "[BUG] "
+labels: ["bug"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 버그 리포트
+        발견한 버그를 상세히 설명해주세요.
+
+  - type: input
+    id: bug-title
+    attributes:
+      label: 버그 요약
+      description: 버그를 한 줄로 요약해주세요
+      placeholder: "예: 로그인 후 세션이 유지되지 않음"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: 심각도
+      options:
+        - 🔴 Critical (서비스 중단)
+        - 🟠 High (주요 기능 장애)
+        - 🟡 Medium (일부 기능 문제)
+        - 🟢 Low (경미한 문제)
+      default: 2
+    validations:
+      required: true
+
+  - type: textarea
+    id: current-behavior
+    attributes:
+      label: 현재 동작
+      description: 현재 어떤 문제가 발생하나요?
+      placeholder: |
+        로그인 후 새로고침하면 로그인 상태가 사라집니다.
+        토큰이 저장되지 않는 것으로 보입니다.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: 기대하는 동작
+      description: 어떻게 동작해야 하나요?
+      placeholder: |
+        로그인 후 새로고침해도 로그인 상태가 유지되어야 합니다.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce-steps
+    attributes:
+      label: 재현 단계
+      description: 버그를 재현하는 방법을 단계별로 작성해주세요
+      placeholder: |
+        1. 로그인 페이지로 이동
+        2. 이메일/비밀번호 입력 후 로그인
+        3. 브라우저 새로고침 (F5)
+        4. 로그인 페이지로 리다이렉트됨
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 환경 정보
+      description: 버그가 발생한 환경
+      value: |
+        - OS:
+        - Browser:
+        - Node version:
+        - Package version:
+      render: markdown
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 로그 및 에러 메시지
+      description: 콘솔 로그, 에러 스택 등
+      placeholder: |
+        ```
+        Error: Session not found
+        at AuthService.getSession (auth.service.ts:42)
+        ```
+      render: shell
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 스크린샷 (선택)
+      description: 문제를 보여주는 이미지나 영상
+
+  - type: textarea
+    id: code-snippet
+    attributes:
+      label: 관련 코드 (선택)
+      description: 버그와 관련된 코드 조각
+      render: typescript
+
+  - type: input
+    id: related-prd
+    attributes:
+      label: 관련 PRD/Issue
+      description: 이 버그와 관련된 PRD나 Issue 번호
+      placeholder: "예: #123, PRD-0001"
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: 추가 정보
+      description: 기타 도움이 될 만한 정보
