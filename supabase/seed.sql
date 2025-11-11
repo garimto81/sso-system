@@ -23,19 +23,55 @@
 -- Regular User: 00000000-0000-0000-0000-000000000003
 
 -- ============================================================================
--- 2. 프로필 생성 (auth.users 생성 후 자동으로 생성되지만, 역할 업데이트 필요)
+-- 2. Admin 사용자 생성 및 프로필 설정
 -- ============================================================================
 
--- Admin 역할로 업데이트 (첫 번째 사용자를 admin으로 설정)
--- 실제 UUID는 Supabase Auth에서 확인 후 교체
--- UPDATE public.profiles
--- SET role = 'admin', display_name = 'System Admin'
--- WHERE email = 'admin@sso.local';
+-- 개발 환경용 임시 Admin 사용자 생성
+-- ⚠️ 프로덕션에서는 절대 사용하지 마세요!
 
--- App Owner 역할로 업데이트
--- UPDATE public.profiles
--- SET role = 'app_owner', display_name = 'App Developer'
--- WHERE email = 'developer@sso.local';
+-- Step 1: auth.users에 Admin 사용자 생성 (트리거가 profiles 자동 생성)
+INSERT INTO auth.users (
+  id,
+  instance_id,
+  aud,
+  role,
+  email,
+  encrypted_password,
+  email_confirmed_at,
+  recovery_sent_at,
+  last_sign_in_at,
+  raw_app_meta_data,
+  raw_user_meta_data,
+  created_at,
+  updated_at,
+  confirmation_token,
+  email_change,
+  email_change_token_new,
+  recovery_token
+) VALUES (
+  '00000000-0000-0000-0000-000000000001',
+  '00000000-0000-0000-0000-000000000000',
+  'authenticated',
+  'authenticated',
+  'admin@sso.local',
+  crypt('admin123!@#', gen_salt('bf')), -- 비밀번호: admin123!@#
+  NOW(),
+  NOW(),
+  NOW(),
+  '{"provider":"email","providers":["email"]}',
+  '{}',
+  NOW(),
+  NOW(),
+  '',
+  '',
+  '',
+  ''
+) ON CONFLICT (id) DO NOTHING;
+
+-- Step 2: Admin 역할로 업데이트 (트리거는 'user' 역할로 생성하므로)
+UPDATE public.profiles
+SET role = 'admin', display_name = 'System Admin'
+WHERE id = '00000000-0000-0000-0000-000000000001';
 
 -- ============================================================================
 -- 3. 테스트 앱 등록

@@ -26,8 +26,25 @@ export function validateConfig(config: Partial<SSOConfig>): void {
     errors.push('appId is required');
   }
 
-  if (!config.appSecret) {
-    errors.push('appSecret is required');
+  // appSecret or tokenExchangeUrl required
+  if (!config.appSecret && !config.tokenExchangeUrl) {
+    errors.push(
+      'Either appSecret (server-side) or tokenExchangeUrl (client-side) is required'
+    );
+  }
+
+  // Security check: Warn if appSecret used in browser
+  if (config.appSecret && typeof window !== 'undefined') {
+    console.warn(
+      '⚠️ SECURITY WARNING: appSecret detected in browser environment!\n' +
+      'This is a security risk. Use tokenExchangeUrl with backend proxy instead.\n' +
+      'See: https://github.com/garimto81/sso-system#backend-proxy-pattern'
+    );
+  }
+
+  // Validate tokenExchangeUrl if provided
+  if (config.tokenExchangeUrl && !isValidUrl(config.tokenExchangeUrl)) {
+    errors.push('tokenExchangeUrl must be a valid URL');
   }
 
   if (!config.redirectUri) {

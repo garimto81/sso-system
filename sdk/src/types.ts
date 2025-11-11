@@ -46,8 +46,24 @@ export interface SSOConfig {
   /** Application API key */
   appId: string;
 
-  /** Application secret (server-side only) */
-  appSecret: string;
+  /**
+   * Application secret (OPTIONAL - server-side only)
+   * ⚠️ SECURITY WARNING: Never use appSecret in browser/client-side code!
+   *
+   * Usage:
+   * - Server-side (Node.js): Provide appSecret for direct token exchange
+   * - Client-side (Browser): Omit appSecret, use tokenExchangeUrl instead
+   */
+  appSecret?: string;
+
+  /**
+   * Backend proxy URL for token exchange (client-side only)
+   * Required when appSecret is not provided
+   * Your backend should exchange code for token using appSecret
+   *
+   * Example: 'https://your-app.com/api/auth/exchange'
+   */
+  tokenExchangeUrl?: string;
 
   /** OAuth 2.0 redirect URI */
   redirectUri: string;

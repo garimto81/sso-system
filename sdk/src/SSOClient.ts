@@ -156,6 +156,12 @@ export class SSOClient {
    * Exchange authorization code for access token
    */
   private async exchangeCode(code: string): Promise<TokenSet> {
+    // Use backend proxy if configured (client-side mode)
+    if (this.config.tokenExchangeUrl) {
+      return this.exchangeCodeViaProxy(code);
+    }
+
+    // Direct exchange with SSO server (server-side mode)
     const response = await fetch(`${this.config.ssoUrl}/api/v1/token/exchange`, {
       method: 'POST',
       headers: {
@@ -173,6 +179,38 @@ export class SSOClient {
       throw SSOErrors.networkError({
         status: response.status,
         error: error.error || 'token_exchange_failed',
+      });
+    }
+
+    const data = await response.json();
+    return {
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+      expires_in: data.expires_in,
+      token_type: 'Bearer',
+    };
+  }
+
+  /**
+   * Exchange code via backend proxy (client-side mode)
+   */
+  private async exchangeCodeViaProxy(code: string): Promise<TokenSet> {
+    const response = await fetch(this.config.tokenExchangeUrl!, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        code,
+        redirect_uri: this.config.redirectUri,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw SSOErrors.networkError({
+        status: response.status,
+        error: error.error || 'token_exchange_via_proxy_failed',
       });
     }
 
