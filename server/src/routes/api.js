@@ -5,6 +5,7 @@
 
 import express from 'express';
 import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import { supabaseAdmin } from '../utils/supabase.js';
 
 const router = express.Router();
@@ -25,18 +26,84 @@ router.get('/authorize', async (req, res) => {
       });
     }
 
-    // TODO: Check if user is logged in (session/cookie)
-    // For now, return error asking user to login
-    return res.status(401).json({
-      error: 'login_required',
-      message: 'User must be logged in',
-      login_url: `/auth/login?redirect=${encodeURIComponent(req.originalUrl)}`
-    });
+    // Step 1: Check if user is logged in (via Authorization header)
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        error: 'login_required',
+        message: 'User must be logged in',
+        login_url: `/auth/login?redirect=${encodeURIComponent(req.originalUrl)}`
+      });
+    }
 
-    // TODO: Verify app exists and redirect_uri is whitelisted
-    // TODO: Generate authorization code
-    // TODO: Store code in auth_codes table
-    // TODO: Redirect to app's redirect_uri with code
+    // Verify user session
+    const token = authHeader.substring(7);
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+
+    if (userError || !user) {
+      return res.status(401).json({
+        error: 'invalid_token',
+        message: 'Invalid or expired token'
+      });
+    }
+
+    // Step 2: Verify app exists and is active
+    const { data: app, error: appError } = await supabaseAdmin
+      .from('apps')
+      .select('id, name, api_key, redirect_urls, is_active')
+      .eq('api_key', app_id)
+      .eq('is_active', true)
+      .single();
+
+    if (appError || !app) {
+      return res.status(400).json({
+        error: 'invalid_client',
+        message: 'Invalid app_id or app is not active'
+      });
+    }
+
+    // Step 3: Verify redirect_uri is whitelisted
+    if (!app.redirect_urls.includes(redirect_uri)) {
+      return res.status(400).json({
+        error: 'invalid_redirect_uri',
+        message: 'redirect_uri is not whitelisted for this app',
+        allowed_uris: app.redirect_urls
+      });
+    }
+
+    // Step 4: Generate authorization code (random 32-byte hex string)
+    const code = crypto.randomBytes(32).toString('hex');
+
+    // Step 5: Store code in auth_codes table (expires in 5 minutes)
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
+
+    const { error: insertError } = await supabaseAdmin
+      .from('auth_codes')
+      .insert({
+        code,
+        user_id: user.id,
+        app_id: app.id,
+        expires_at: expiresAt.toISOString()
+      });
+
+    if (insertError) {
+      console.error('Failed to store auth code:', insertError);
+      return res.status(500).json({
+        error: 'server_error',
+        message: 'Failed to generate authorization code'
+      });
+    }
+
+    console.log(`✅ Authorization code generated for user ${user.email} → app ${app.name}`);
+
+    // Step 6: Redirect to app's redirect_uri with code and state
+    const redirectUrl = new URL(redirect_uri);
+    redirectUrl.searchParams.set('code', code);
+    if (state) {
+      redirectUrl.searchParams.set('state', state);
+    }
+
+    res.redirect(redirectUrl.toString());
 
   } catch (err) {
     console.error('Authorize error:', err);
@@ -64,7 +131,7 @@ router.post('/token/exchange', async (req, res) => {
       });
     }
 
-    // Verify app credentials
+    // Step 1: Verify app credentials
     const { data: app, error: appError } = await supabaseAdmin
       .from('apps')
       .select('id, name, api_key, api_secret, is_active')
@@ -79,17 +146,85 @@ router.post('/token/exchange', async (req, res) => {
       });
     }
 
-    // TODO: Verify app_secret against hashed api_secret (bcrypt)
+    // Step 2: Verify app_secret against hashed api_secret (bcrypt)
+    const secretMatch = await bcrypt.compare(app_secret, app.api_secret);
+    if (!secretMatch) {
+      return res.status(401).json({
+        error: 'invalid_client',
+        message: 'Invalid app_secret'
+      });
+    }
 
-    // TODO: Verify authorization code
-    // TODO: Get user_id from code
-    // TODO: Delete code (one-time use!)
-    // TODO: Generate JWT for user
-    // TODO: Return access token
+    // Step 3: Verify authorization code exists and not expired
+    const { data: authCode, error: codeError } = await supabaseAdmin
+      .from('auth_codes')
+      .select('code, user_id, app_id, expires_at')
+      .eq('code', code)
+      .eq('app_id', app.id)
+      .single();
 
+    if (codeError || !authCode) {
+      return res.status(400).json({
+        error: 'invalid_grant',
+        message: 'Invalid or expired authorization code'
+      });
+    }
+
+    // Check if code is expired
+    if (new Date(authCode.expires_at) < new Date()) {
+      // Delete expired code
+      await supabaseAdmin.from('auth_codes').delete().eq('code', code);
+
+      return res.status(400).json({
+        error: 'invalid_grant',
+        message: 'Authorization code has expired'
+      });
+    }
+
+    // Step 4: Delete code (one-time use!)
+    const { error: deleteError } = await supabaseAdmin
+      .from('auth_codes')
+      .delete()
+      .eq('code', code);
+
+    if (deleteError) {
+      console.error('Failed to delete auth code:', deleteError);
+    }
+
+    // Step 5: Generate JWT access token for the user
+    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
+      user_id: authCode.user_id
+    });
+
+    if (sessionError || !sessionData) {
+      console.error('Failed to create session:', sessionError);
+      return res.status(500).json({
+        error: 'server_error',
+        message: 'Failed to generate access token'
+      });
+    }
+
+    // Step 6: Get user profile information
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('id, email, display_name, role')
+      .eq('id', authCode.user_id)
+      .single();
+
+    console.log(`✅ Token exchanged for user ${profile?.email || authCode.user_id} → app ${app.name}`);
+
+    // Step 7: Return access token and user info
     res.json({
-      message: 'Token exchange - Not fully implemented yet',
-      app_name: app.name
+      access_token: sessionData.access_token,
+      refresh_token: sessionData.refresh_token,
+      expires_in: sessionData.expires_in || 3600,
+      token_type: 'Bearer',
+      user: {
+        id: authCode.user_id,
+        email: profile?.email,
+        display_name: profile?.display_name,
+        role: profile?.role
+      }
     });
 
   } catch (err) {
@@ -109,7 +244,7 @@ router.get('/apps', async (req, res) => {
   try {
     const { data: apps, error } = await supabaseAdmin
       .from('apps')
-      .select('id, name, description, auth_method')
+      .select('id, name, description, api_key, auth_method')
       .eq('is_active', true)
       .order('name');
 
