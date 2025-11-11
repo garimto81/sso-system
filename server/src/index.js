@@ -13,13 +13,16 @@ import { dirname, join } from 'path';
 // IMPORTANT: Load environment variables FIRST, before any other imports
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Try to load .env file (for local development)
+// In production (Vercel), environment variables are already set
 const envPath = join(__dirname, '../../.env');
 const result = dotenv.config({ path: envPath });
 
-if (result.error) {
+if (result.error && process.env.NODE_ENV !== 'production') {
   console.error('❌ Failed to load .env file:', result.error);
   console.log('Tried to load from:', envPath);
-  process.exit(1);
+  console.log('💡 Tip: Copy .env.example to .env');
 }
 
 console.log('✅ Environment variables loaded');
