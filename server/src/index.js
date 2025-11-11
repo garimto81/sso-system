@@ -32,8 +32,11 @@ console.log('   SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? '✅ Set' :
 // Import routes (after env is loaded)
 import authRoutes from './routes/auth.js';
 import apiRoutes from './routes/api.js';
+import adminRoutes from './routes/admin.js';
 import { healthLimiter, authLimiter, tokenLimiter } from './middleware/rateLimiter.js';
 import { httpsRedirect } from './middleware/httpsRedirect.js';
+import authenticateAdmin from './middleware/authenticateAdmin.js';
+import { adminRateLimiter } from './middleware/adminRateLimiter.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -97,6 +100,9 @@ app.use('/auth', authLimiter, authRoutes);
 
 // API routes (authorize, token exchange) - with moderate rate limiting
 app.use('/api/v1', tokenLimiter, apiRoutes);
+
+// Admin routes (dashboard API) - with admin authentication and rate limiting
+app.use('/api/v1/admin', authenticateAdmin, adminRateLimiter, adminRoutes);
 
 // 404 handler
 app.use((req, res) => {
