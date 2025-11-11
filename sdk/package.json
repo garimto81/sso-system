@@ -1,6 +1,6 @@
 {
   "name": "@sso-system/sdk",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "JavaScript/TypeScript SDK for SSO System - 3-line OAuth 2.0 integration",
   "type": "module",
   "main": "dist/index.js",
