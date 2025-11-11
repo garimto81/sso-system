@@ -33,13 +33,13 @@ CREATE TABLE IF NOT EXISTS public.auth_codes (
 );
 
 -- 인덱스: expires_at으로 만료된 코드 빠르게 조회/삭제
-CREATE INDEX idx_auth_codes_expires ON public.auth_codes(expires_at);
+CREATE INDEX IF NOT EXISTS idx_auth_codes_expires ON public.auth_codes(expires_at);
 
 -- 인덱스: user_id로 사용자별 코드 조회
-CREATE INDEX idx_auth_codes_user_id ON public.auth_codes(user_id);
+CREATE INDEX IF NOT EXISTS idx_auth_codes_user_id ON public.auth_codes(user_id);
 
 -- 인덱스: app_id로 앱별 코드 조회
-CREATE INDEX idx_auth_codes_app_id ON public.auth_codes(app_id);
+CREATE INDEX IF NOT EXISTS idx_auth_codes_app_id ON public.auth_codes(app_id);
 
 -- 코멘트 추가
 COMMENT ON TABLE public.auth_codes IS 'Token Exchange용 일회용 인증 코드 (OAuth 2.0 Authorization Code)';

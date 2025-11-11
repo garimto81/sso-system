@@ -22,10 +22,10 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 );
 
 -- 인덱스: email로 빠른 검색
-CREATE INDEX idx_profiles_email ON public.profiles(email);
+CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles(email);
 
 -- 인덱스: role로 필터링 (admin, app_owner 조회 최적화)
-CREATE INDEX idx_profiles_role ON public.profiles(role);
+CREATE INDEX IF NOT EXISTS idx_profiles_role ON public.profiles(role);
 
 -- 코멘트 추가
 COMMENT ON TABLE public.profiles IS '사용자 프로필 및 역할 정보';
@@ -66,13 +66,13 @@ CREATE TABLE IF NOT EXISTS public.apps (
 );
 
 -- 인덱스: api_key로 빠른 검색 (Token Exchange 시)
-CREATE INDEX idx_apps_api_key ON public.apps(api_key);
+CREATE INDEX IF NOT EXISTS idx_apps_api_key ON public.apps(api_key);
 
 -- 인덱스: owner_id로 앱 목록 조회
-CREATE INDEX idx_apps_owner_id ON public.apps(owner_id);
+CREATE INDEX IF NOT EXISTS idx_apps_owner_id ON public.apps(owner_id);
 
 -- 인덱스: 활성화된 앱만 조회
-CREATE INDEX idx_apps_is_active ON public.apps(is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_apps_is_active ON public.apps(is_active) WHERE is_active = true;
 
 -- 코멘트 추가
 COMMENT ON TABLE public.apps IS 'SSO에 등록된 앱 목록';
@@ -96,12 +96,14 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- profiles 테이블에 트리거 적용
+DROP TRIGGER IF EXISTS set_updated_at_profiles ON public.profiles;
 CREATE TRIGGER set_updated_at_profiles
   BEFORE UPDATE ON public.profiles
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_updated_at();
 
 -- apps 테이블에 트리거 적용
+DROP TRIGGER IF EXISTS set_updated_at_apps ON public.apps;
 CREATE TRIGGER set_updated_at_apps
   BEFORE UPDATE ON public.apps
   FOR EACH ROW
@@ -126,6 +128,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- auth.users에 트리거 적용
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW
