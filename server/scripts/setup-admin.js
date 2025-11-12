@@ -1,18 +1,13 @@
 #!/usr/bin/env node
-
 /**
- * Setup Admin User
+ * Setup Admin User (Server-Local Script)
  *
- * Admin 계정을 빠르게 생성하는 스크립트
+ * This script runs from server/ directory where dependencies are installed.
  *
- * 사용법:
- *   node scripts/setup-admin-user.js
- *   node scripts/setup-admin-user.js --email=admin@example.com --password=secret123
- *
- * IMPORTANT: This script must be run from server/ directory or use NODE_PATH
- *   cd server && node ../scripts/setup-admin-user.js
- *   OR
- *   NODE_PATH=./server/node_modules node scripts/setup-admin-user.js
+ * Usage:
+ *   cd server
+ *   node scripts/setup-admin.js
+ *   node scripts/setup-admin.js --email=admin@example.com --password=secret123
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -25,7 +20,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Load .env from server directory
-dotenv.config({ path: join(__dirname, '../server/.env') });
+dotenv.config({ path: join(__dirname, '..', '.env') });
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -122,6 +117,9 @@ async function createAdminUser() {
     }
 
     const userId = authData.user.id;
+
+    // Wait a moment for trigger to create profile
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     // Update profile role
     const { error: profileError } = await supabase

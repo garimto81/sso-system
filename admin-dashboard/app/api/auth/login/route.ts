@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3000'
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,11 +22,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Call backend SSO server
+    console.log('[Login] Calling backend API:', `${API_URL}/auth/login`)
+
     const response = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     })
+
+    console.log('[Login] Backend response status:', response.status)
 
     if (!response.ok) {
       const error = await response.json()
@@ -66,7 +70,16 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Login error:', error)
+    console.error('[Login] Error:', error)
+
+    // Check if it's a network error (backend not reachable)
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      return NextResponse.json(
+        { error: 'Backend server unavailable' },
+        { status: 503 }
+      )
+    }
+
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -4,6 +4,8 @@
   "description": "SSO System - OAuth 2.0 Central Authentication Server",
   "private": true,
   "scripts": {
+    "admin:setup": "cd server && node scripts/setup-admin.js",
+    "admin:setup:sql": "psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -f scripts/setup-admin-user.sql",
     "test:setup": "node scripts/start-test-env.js",
     "test:cleanup": "node scripts/stop-test-env.js",
     "test:check": "node scripts/check-test-env.js",
