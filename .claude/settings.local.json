@@ -14,7 +14,11 @@
       "Bash(vercel login:*)",
       "Bash(git -C \"d:\\AI\\claude01\\sso-system\" status --short)",
       "Bash(git branch:*)",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(timeout 5 node:*)",
+      "Bash(node:*)",
+      "Bash(awk:*)",
+      "Bash(git fetch:*)"
     ],
     "deny": [],
     "ask": []

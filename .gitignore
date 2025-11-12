@@ -39,4 +39,9 @@ build/
 *.pem
 secrets/
 .env.production
-supabase-*.sql
+
+# Test files
+test-*.json
+nul
+**/nul
+decode-token.js

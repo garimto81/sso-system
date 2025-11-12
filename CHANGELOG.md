@@ -5,6 +5,49 @@ All notable changes to SSO System will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🔧 Fixed - 2025-11-12
+
+#### Admin User Creation Scripts
+- **Fixed:** ES module resolution error in `scripts/setup-admin-user.js` when run from project root
+- **Root Cause:** `@supabase/supabase-js` dependency not accessible via NODE_PATH with ES modules
+- **Solution:** Created server-local script `server/scripts/setup-admin.js` that runs from server directory
+
+**New Files:**
+- `server/scripts/setup-admin.js` - Primary admin creation script (runs from server/)
+- `server/scripts/verify-admin.js` - Verification utility
+- `scripts/setup-admin-user.sql` - SQL alternative (no Node.js dependencies)
+- `scripts/setup-admin-user.bat` - Windows wrapper with auto-dependency handling
+- `scripts/setup-admin-user.sh` - Linux/macOS wrapper with fallback to SQL
+- `DEPLOYMENT_SCRIPTS_SUMMARY.md` - Architecture documentation
+- `ADMIN_SETUP_QUICKREF.md` - Quick reference guide
+
+**Updated Files:**
+- `scripts/setup-admin-user.js` - Added documentation, now references server version
+- `scripts/start-test-env.js` - Updated to use server-local script with correct cwd
+- `scripts/README.md` - Added comprehensive admin setup documentation
+- `package.json` - Added npm scripts: `admin:setup`, `admin:setup:sql`
+
+**Usage:**
+```bash
+# Recommended: npm script
+npm run admin:setup
+
+# Windows wrapper
+scripts\setup-admin-user.bat
+
+# Linux/macOS wrapper
+bash scripts/setup-admin-user.sh
+
+# SQL alternative (no Node.js)
+npm run admin:setup:sql
+```
+
+**Impact:** Unblocks E2E testing and admin dashboard development
+
+---
+
 ## [1.0.0] - 2025-01-12
 
 ### 🚀 Major Release - Production Ready

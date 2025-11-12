@@ -4,7 +4,7 @@
  */
 
 import express from 'express';
-import { supabase } from '../utils/supabase.js';
+import { supabase, supabaseAdmin } from '../utils/supabase.js';
 
 const router = express.Router();
 
@@ -30,14 +30,34 @@ router.post('/login', async (req, res) => {
 
     if (error) {
       return res.status(401).json({
-        error: 'Authentication failed',
+        error: 'Invalid credentials',
         message: error.message
+      });
+    }
+
+    // Fetch user profile to get role (use admin client to bypass RLS)
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('role')
+      .eq('id', data.user.id)
+      .single();
+
+    if (profileError) {
+      console.error('Profile fetch error:', profileError);
+      return res.status(500).json({
+        error: 'Failed to fetch user profile',
+        message: profileError.message
       });
     }
 
     res.json({
       success: true,
-      user: data.user,
+      access_token: data.session.access_token,
+      user: {
+        id: data.user.id,
+        email: data.user.email,
+        role: profile.role
+      },
       session: data.session
     });
 

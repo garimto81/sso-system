@@ -4,9 +4,183 @@ GitHub 네이티브 워크플로우 자동화 스크립트 모음
 
 ## 📋 목차
 
+- [Admin User Setup](#-admin-user-setup) - Admin 계정 생성
+  - [setup-admin-user.js](#setup-admin-userjs) - Node.js 스크립트
+  - [setup-admin-user.sql](#setup-admin-usersql) - SQL 대안
+  - [setup-admin-user.sh/bat](#setup-admin-usershbat) - 래퍼 스크립트
 - [github-issue-dev.sh](#github-issue-devsh) - 이슈 기반 개발 시작
 - [setup-github-labels.sh](#setup-github-labelssh) - GitHub 라벨 설정
 - [사용 예시](#사용-예시)
+
+---
+
+## 🔐 Admin User Setup
+
+### 빠른 시작 (권장)
+
+**Windows:**
+```bash
+# 방법 1: 배치 래퍼 사용 (의존성 자동 처리)
+scripts\setup-admin-user.bat
+
+# 방법 2: npm 스크립트 사용
+npm run admin:setup
+
+# 방법 3: 커스텀 계정 정보
+scripts\setup-admin-user.bat --email=admin@example.com --password=MySecret123!
+```
+
+**Linux/macOS:**
+```bash
+# 방법 1: bash 래퍼 사용 (의존성 자동 처리)
+bash scripts/setup-admin-user.sh
+
+# 방법 2: npm 스크립트 사용
+npm run admin:setup
+
+# 방법 3: 커스텀 계정 정보
+bash scripts/setup-admin-user.sh --email=admin@example.com --password=MySecret123!
+```
+
+### 대안 방법
+
+**SQL 스크립트 (Node.js 의존성 불필요):**
+```bash
+# 사전요구: PostgreSQL client (psql) + Supabase 실행 중
+npm run admin:setup:sql
+
+# 또는 psql 직접 실행
+PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -f scripts/setup-admin-user.sql
+```
+
+**수동 Node.js (고급):**
+```bash
+# NODE_PATH 설정으로 @supabase/supabase-js 찾기
+export NODE_PATH=./server/node_modules  # Linux/macOS
+set NODE_PATH=.\server\node_modules     # Windows CMD
+$env:NODE_PATH=".\server\node_modules"  # Windows PowerShell
+
+node scripts/setup-admin-user.js --email=admin@test.com --password=Test1234!
+```
+
+### 기본 계정 정보
+
+- **Email:** admin@test.com
+- **Password:** Test1234!
+- **Role:** admin
+
+### 문제 해결
+
+**에러: "Cannot find package '@supabase/supabase-js'"**
+```bash
+# 해결 1: 서버 의존성 설치
+cd server
+npm install
+cd ..
+
+# 해결 2: SQL 대안 사용
+npm run admin:setup:sql
+```
+
+**에러: "SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not found"**
+```bash
+# .env 파일 존재 확인
+ls server/.env
+
+# 없으면 예제에서 복사
+cd server
+cp .env.example .env
+
+# Supabase 시작으로 키 얻기
+npx supabase start
+```
+
+**에러: "psql: command not found" (SQL 방법)**
+```bash
+# PostgreSQL client 도구 설치
+# Ubuntu/Debian
+sudo apt-get install postgresql-client
+
+# macOS
+brew install postgresql
+
+# Windows: https://www.postgresql.org/download/windows/
+# 또는 Node.js 방법 사용
+```
+
+### setup-admin-user.js
+
+Supabase Auth + profiles 테이블에 admin 사용자를 생성합니다.
+
+**기능:**
+- 이메일/비밀번호 대화형 입력 (CLI 인자 미제공 시)
+- 이메일 형식 및 비밀번호 길이 검증 (최소 8자)
+- 기존 사용자 처리 (role을 admin으로 업데이트)
+- 이메일 자동 확인 (검증 불필요)
+- 생성 후 테스트 curl 명령 표시
+
+**사용법:**
+```bash
+# 대화형 모드
+node scripts/setup-admin-user.js
+
+# CLI 인자 사용
+node scripts/setup-admin-user.js --email=admin@example.com --password=secret123
+```
+
+**요구사항:**
+- `@supabase/supabase-js` (server/node_modules에 설치됨)
+- `dotenv` (Node.js 내장)
+- 유효한 `server/.env` (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 포함)
+
+### setup-admin-user.sql
+
+PostgreSQL을 통해 admin을 직접 생성하는 SQL 기반 대안입니다.
+
+**기능:**
+- Node.js 의존성 불필요
+- 비밀번호 해싱에 bcrypt 사용 (10 rounds)
+- 트랜잭션 안전 (BEGIN/COMMIT)
+- 기존 사용자 확인
+- 마지막에 검증 쿼리 실행
+
+**사용법:**
+```bash
+# npm 스크립트 사용
+npm run admin:setup:sql
+
+# psql 직접 사용
+PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -f scripts/setup-admin-user.sql
+
+# Windows
+set PGPASSWORD=postgres
+psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -f scripts\setup-admin-user.sql
+```
+
+**요구사항:**
+- PostgreSQL client (`psql`) 설치됨
+- Supabase 실행 중 (`npx supabase start`)
+
+### setup-admin-user.sh/bat
+
+의존성 해결을 자동으로 처리하는 래퍼 스크립트입니다.
+
+**기능:**
+- server/node_modules 확인 및 필요 시 `npm install` 실행
+- NODE_PATH 환경 변수 설정
+- Node.js 방법 실패 시 SQL 방법으로 폴백
+- 색상 코드 출력
+
+**사용법:**
+```bash
+# Bash (Linux/macOS)
+bash scripts/setup-admin-user.sh
+bash scripts/setup-admin-user.sh --email=admin@example.com --password=secret123
+
+# Batch (Windows)
+scripts\setup-admin-user.bat
+scripts\setup-admin-user.bat --email=admin@example.com --password=secret123
+```
 
 ---
 
