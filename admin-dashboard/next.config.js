@@ -12,7 +12,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'", // Tailwind requires unsafe-inline
       "img-src 'self' data: https:",
       "font-src 'self' data:",
-      "connect-src 'self' " + (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'),
+      "connect-src 'self' " + ((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000').trim()),
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
