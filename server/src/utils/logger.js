@@ -49,8 +49,9 @@ transports.push(
   })
 );
 
-// Log to files in production or when explicitly configured
-if (process.env.NODE_ENV === 'production' || process.env.LOG_TO_FILE === 'true') {
+// Log to files only when not in Vercel (serverless) environment
+// Vercel has read-only filesystem except /tmp
+if (process.env.VERCEL !== '1' && (process.env.NODE_ENV === 'production' || process.env.LOG_TO_FILE === 'true')) {
   transports.push(
     new winston.transports.File({
       filename: process.env.LOG_ERROR_FILE || path.join(logsDir, 'error.log'),
