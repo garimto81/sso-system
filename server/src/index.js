@@ -125,15 +125,20 @@ app.use((err, req, res, next) => {
 // Start Server
 // ============================================================================
 
-app.listen(PORT, () => {
-  console.log('='.repeat(60));
-  console.log('🚀 SSO Central Authentication Server');
-  console.log('='.repeat(60));
-  console.log(`✅ Server running on: http://localhost:${PORT}`);
-  console.log(`✅ Health check: http://localhost:${PORT}/health`);
-  console.log(`✅ Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`✅ Supabase URL: ${process.env.SUPABASE_URL}`);
-  console.log('='.repeat(60));
-});
+// Only start server if not in Vercel serverless environment
+if (process.env.VERCEL !== '1') {
+  app.listen(PORT, () => {
+    console.log('='.repeat(60));
+    console.log('🚀 SSO Central Authentication Server');
+    console.log('='.repeat(60));
+    console.log(`✅ Server running on: http://localhost:${PORT}`);
+    console.log(`✅ Health check: http://localhost:${PORT}/health`);
+    console.log(`✅ Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`✅ Supabase URL: ${process.env.SUPABASE_URL}`);
+    console.log('='.repeat(60));
+  });
+} else {
+  console.log('✅ Running in Vercel serverless environment');
+}
 
 export default app;
