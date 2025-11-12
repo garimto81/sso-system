@@ -1,0 +1,22 @@
+{
+  "name": "sso-system",
+  "version": "0.2.0",
+  "description": "SSO System - OAuth 2.0 Central Authentication Server",
+  "private": true,
+  "scripts": {
+    "test:setup": "node scripts/start-test-env.js",
+    "test:cleanup": "node scripts/stop-test-env.js",
+    "test:check": "node scripts/check-test-env.js",
+    "test:e2e": "cd admin-dashboard && npm run test:e2e",
+    "test:e2e:ui": "cd admin-dashboard && npm run test:e2e:ui",
+    "test:all": "npm run test:setup && npm run test:e2e"
+  },
+  "keywords": [
+    "sso",
+    "oauth2",
+    "authentication",
+    "authorization"
+  ],
+  "author": "",
+  "license": "MIT"
+}
