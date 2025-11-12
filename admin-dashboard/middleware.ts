@@ -11,12 +11,19 @@ import type { NextRequest } from 'next/server'
 import * as jose from 'jose' // Use jose for Edge Runtime compatibility
 
 const TOKEN_NAME = 'sso_admin_token'
+// Use Supabase JWT secret (same as backend Supabase instance)
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'development-secret-change-in-production'
+  process.env.SUPABASE_JWT_SECRET ||
+    'super-secret-jwt-token-with-at-least-32-characters-long'
 )
 
 // Public routes that don't require authentication
-const PUBLIC_ROUTES = ['/login', '/forgot-password']
+const PUBLIC_ROUTES = [
+  '/login',
+  '/forgot-password',
+  '/api/auth/login',
+  '/api/auth/logout',
+]
 
 // API routes that need authentication
 const PROTECTED_API_ROUTES = ['/api/admin']
@@ -88,7 +95,9 @@ export async function middleware(request: NextRequest) {
 
   // Check admin role for /admin routes
   if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
-    const role = payload.role as string | undefined
+    // Supabase stores custom role in user_metadata.role
+    const userMetadata = payload.user_metadata as { role?: string } | undefined
+    const role = userMetadata?.role
 
     if (role !== 'admin') {
       return pathname.startsWith('/api/')
@@ -100,8 +109,11 @@ export async function middleware(request: NextRequest) {
   // Add user info to request headers for downstream use
   const response = NextResponse.next()
   response.headers.set('X-User-ID', payload.sub as string)
-  if (payload.role) {
-    response.headers.set('X-User-Role', payload.role as string)
+
+  // Get role from user_metadata
+  const userMetadata = payload.user_metadata as { role?: string } | undefined
+  if (userMetadata?.role) {
+    response.headers.set('X-User-Role', userMetadata.role)
   }
 
   return response

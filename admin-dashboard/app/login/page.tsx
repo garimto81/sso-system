@@ -42,7 +42,8 @@ export default function LoginPage() {
       // No need to manually store token!
 
       // Redirect to admin dashboard
-      router.push(redirect)
+      // Use window.location for full page reload to ensure cookie is sent
+      window.location.href = redirect
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
     } finally {
