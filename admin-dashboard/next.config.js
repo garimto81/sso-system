@@ -75,7 +75,11 @@ const nextConfig = {
                 value: 'http',
               },
             ],
-            destination: 'https://sso-admin.example.com/:path*',
+            // Use VERCEL_URL environment variable (automatically set by Vercel)
+            // Falls back to NEXT_PUBLIC_FRONTEND_URL if not on Vercel
+            destination: process.env.VERCEL_URL
+              ? `https://${process.env.VERCEL_URL}/:path*`
+              : (process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://localhost:3001/:path*'),
             permanent: true,
           },
         ]

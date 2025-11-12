@@ -5,7 +5,9 @@
  * ✅ CSRF protection via cookies
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+// Use environment variable, fallback to localhost for development
+// In production, NEXT_PUBLIC_API_URL should be set to the backend URL
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3000'
 
 export class APIError extends Error {
   constructor(
