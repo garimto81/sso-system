@@ -196,23 +196,40 @@ async function createAdminUser() {
   log.step('Creating Admin Account...')
 
   try {
-    const setupAdminPath = path.join(__dirname, 'setup-admin-user.js')
+    const serverPath = path.join(__dirname, '..', 'server')
+    const setupAdminPath = path.join(serverPath, 'scripts', 'setup-admin.js')
+    const serverNodeModules = path.join(serverPath, 'node_modules')
 
     if (!fs.existsSync(setupAdminPath)) {
-      log.warn('setup-admin-user.js not found, skipping admin creation')
+      log.warn('setup-admin.js not found, skipping admin creation')
       return
     }
 
-    // Run setup-admin-user script
-    execSync(`node ${setupAdminPath}`, { stdio: 'inherit' })
+    if (!fs.existsSync(serverNodeModules)) {
+      log.warn('server/node_modules not found, skipping admin creation')
+      log.info('Run: cd server && npm install')
+      return
+    }
+
+    // Run setup-admin script from server directory
+    execSync(`node scripts/setup-admin.js --email=admin@test.com --password=Test1234!`, {
+      cwd: serverPath,
+      stdio: 'inherit',
+    })
 
     log.success('Admin created: admin@test.com / Test1234!')
   } catch (error) {
     // Admin might already exist, that's okay
-    if (error.message.includes('already exists')) {
+    const errorMsg = error.message || error.toString()
+    if (
+      errorMsg.includes('already exists') ||
+      errorMsg.includes('already registered')
+    ) {
       log.success('Admin account already exists')
     } else {
-      log.warn(`Admin creation warning: ${error.message}`)
+      log.warn(`Admin creation warning: ${errorMsg}`)
+      log.info('You can create admin manually later:')
+      log.info('  npm run admin:setup')
     }
   }
 }
