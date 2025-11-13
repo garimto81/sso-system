@@ -1,0 +1,671 @@
+{
+  "info": {
+    "name": "SSO Admin API",
+    "_postman_id": "sso-admin-api-v1",
+    "description": "Complete collection for SSO Admin Dashboard API endpoints. Includes all 8 admin endpoints with example requests, tests, and documentation.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{adminToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Apps",
+      "description": "Endpoints for managing registered applications",
+      "item": [
+        {
+          "name": "List Apps",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has apps array\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('apps');",
+                  "    pm.expect(jsonData.apps).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test(\"Response has pagination\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('pagination');",
+                  "    pm.expect(jsonData.pagination).to.have.all.keys('page', 'limit', 'total', 'total_pages');",
+                  "});",
+                  "",
+                  "// Save first app ID for later requests",
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.apps && jsonData.apps.length > 0) {",
+                  "    pm.collectionVariables.set(\"appId\", jsonData.apps[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/apps?page=1&limit=20&status=all&sort=created_at&order=desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "apps"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (min: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Items per page (min: 1, max: 100)"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Search in app name"
+                },
+                {
+                  "key": "status",
+                  "value": "all",
+                  "description": "Filter: all | active | inactive"
+                },
+                {
+                  "key": "sort",
+                  "value": "created_at",
+                  "description": "Sort by: name | created_at"
+                },
+                {
+                  "key": "order",
+                  "value": "desc",
+                  "description": "Sort order: asc | desc"
+                }
+              ]
+            },
+            "description": "List all registered apps with pagination, search, and filtering."
+          },
+          "response": []
+        },
+        {
+          "name": "Create App",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has app object\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('app');",
+                  "    pm.expect(jsonData.app).to.have.property('id');",
+                  "});",
+                  "",
+                  "pm.test(\"API secret is returned (SAVE THIS)\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.app).to.have.property('api_secret');",
+                  "    pm.expect(jsonData.app.api_secret).to.have.lengthOf(64);",
+                  "});",
+                  "",
+                  "// Save app ID and secret",
+                  "const jsonData = pm.response.json();",
+                  "pm.collectionVariables.set(\"appId\", jsonData.app.id);",
+                  "pm.collectionVariables.set(\"apiSecret\", jsonData.app.api_secret);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test App from Postman\",\n  \"description\": \"Created via Postman collection\",\n  \"redirect_urls\": [\n    \"http://localhost:3000/callback\",\n    \"https://app.example.com/callback\"\n  ],\n  \"allowed_origins\": [\n    \"http://localhost:3000\",\n    \"https://app.example.com\"\n  ],\n  \"auth_method\": \"token_exchange\",\n  \"owner_email\": \"dev@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/apps",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "apps"]
+            },
+            "description": "Register a new application. **IMPORTANT:** The `api_secret` is shown only once!"
+          },
+          "response": []
+        },
+        {
+          "name": "Get App Details",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has app details\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData).to.have.property('name');",
+                  "    pm.expect(jsonData).to.have.property('api_key');",
+                  "});",
+                  "",
+                  "pm.test(\"API secret is hashed\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.api_secret).to.match(/^\\$2[aby]\\$\\d+\\$/);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/apps/{{appId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "apps", "{{appId}}"]
+            },
+            "description": "Get detailed information about a specific app."
+          },
+          "response": []
+        },
+        {
+          "name": "Update App",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has updated app\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "    pm.expect(jsonData).to.have.property('app');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated description from Postman\",\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/apps/{{appId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "apps", "{{appId}}"]
+            },
+            "description": "Update app configuration. **Note:** Cannot update `api_key` or `api_secret`."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete App (Soft)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response confirms deactivation\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.include('deactivated');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/apps/{{appId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "apps", "{{appId}}"]
+            },
+            "description": "Soft delete (deactivate) an app. Sets `is_active = false`."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete App (Permanent)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response confirms permanent deletion\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.include('permanently');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/apps/{{appId}}?permanent=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "apps", "{{appId}}"],
+              "query": [
+                {
+                  "key": "permanent",
+                  "value": "true",
+                  "description": "Permanently delete (CASCADE)"
+                }
+              ]
+            },
+            "description": "**DANGER:** Permanently delete an app and all related data."
+          },
+          "response": []
+        },
+        {
+          "name": "Regenerate Secret",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"New secret is returned (SAVE THIS)\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('api_secret');",
+                  "    pm.expect(jsonData.api_secret).to.have.lengthOf(64);",
+                  "});",
+                  "",
+                  "pm.test(\"Warning message present\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('warning');",
+                  "});",
+                  "",
+                  "// Save new secret",
+                  "const jsonData = pm.response.json();",
+                  "pm.collectionVariables.set(\"apiSecret\", jsonData.api_secret);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"confirmation\": \"Test App from Postman\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/apps/{{appId}}/regenerate-secret",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "apps",
+                "{{appId}}",
+                "regenerate-secret"
+              ]
+            },
+            "description": "Generate a new API secret. Old secret is immediately invalidated. **IMPORTANT:** Save the new secret!"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "description": "Analytics and statistics endpoints",
+      "item": [
+        {
+          "name": "Get App Analytics (7d)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has analytics data\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('period', '7d');",
+                  "    pm.expect(jsonData).to.have.property('metrics');",
+                  "    pm.expect(jsonData).to.have.property('login_trend');",
+                  "    pm.expect(jsonData).to.have.property('top_users');",
+                  "    pm.expect(jsonData).to.have.property('recent_errors');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/apps/{{appId}}/analytics?period=7d",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "apps",
+                "{{appId}}",
+                "analytics"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "7d",
+                  "description": "Time period: 7d | 30d | 90d"
+                }
+              ]
+            },
+            "description": "Get analytics data for a specific app (7-day period)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get App Analytics (30d)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Period is 30d\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.period).to.equal('30d');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/apps/{{appId}}/analytics?period=30d",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "apps",
+                "{{appId}}",
+                "analytics"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "30d"
+                }
+              ]
+            },
+            "description": "Get analytics data for a specific app (30-day period)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get App Analytics (90d)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Period is 90d\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.period).to.equal('90d');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/apps/{{appId}}/analytics?period=90d",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "apps",
+                "{{appId}}",
+                "analytics"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "90d"
+                }
+              ]
+            },
+            "description": "Get analytics data for a specific app (90-day period)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "description": "Global dashboard endpoints",
+      "item": [
+        {
+          "name": "Get Global Dashboard",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has summary\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('summary');",
+                  "    pm.expect(jsonData.summary).to.have.all.keys(",
+                  "        'total_apps',",
+                  "        'active_apps',",
+                  "        'total_users',",
+                  "        'logins_today',",
+                  "        'logins_30d'",
+                  "    );",
+                  "});",
+                  "",
+                  "pm.test(\"Response has top apps\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('top_apps');",
+                  "    pm.expect(jsonData.top_apps).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test(\"Response has recent activity\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('recent_activity');",
+                  "    pm.expect(jsonData.recent_activity).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "dashboard"]
+            },
+            "description": "Get global dashboard statistics for all apps."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Authentication Tests",
+      "description": "Test authentication and authorization",
+      "item": [
+        {
+          "name": "Test - No Auth Header (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message present\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/apps",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "apps"]
+            },
+            "description": "Test that endpoints require authentication."
+          },
+          "response": []
+        },
+        {
+          "name": "Test - Invalid Token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "invalid-token-12345",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/apps",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "apps"]
+            },
+            "description": "Test that invalid tokens are rejected."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "appId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "apiSecret",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

@@ -1,15 +1,24 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git checkout:*)",
-      "Bash(powershell.exe:*)",
-      "Bash(npx supabase status:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git remote add:*)",
-      "Bash(git push:*)",
-      "Bash(git merge:*)",
-      "Bash(git tag:*)"
+      "Bash(node -e \"console.log(require(''crypto'').randomBytes(32).toString(''hex''))\")",
+      "Bash(git restore:*)",
+      "Bash(gh pr:*)",
+      "Bash(cat:*)",
+      "Bash(PGPASSWORD=qwer1234 npx supabase db execute --db-url postgresql://postgres:qwer1234@db.dqkghhlnnskjfwntdtor.supabase.co:5432/postgres --file supabase-cloud-migration-clean-v2.sql)",
+      "Bash(timeout 30 bash -c 'export SUPABASE_ACCESS_TOKEN=sbp_5a0f7364a6f4a48903b4dba649e605f38f64ccdd && npx supabase migration list 2>&1')",
+      "Bash(docker run:*)",
+      "Bash(PGPASSWORD=qwer1234 psql -h db.dqkghhlnnskjfwntdtor.supabase.co -U postgres -d postgres -c \"SELECT type, name FROM (SELECT ''Function'' as type, routine_name as name FROM information_schema.routines WHERE routine_schema = ''public'' UNION ALL SELECT ''Index'', indexname FROM pg_indexes WHERE schemaname = ''public'' UNION ALL SELECT ''Table'', table_name FROM information_schema.tables WHERE table_schema = ''public'' UNION ALL SELECT ''Trigger'', trigger_name FROM information_schema.triggers WHERE trigger_schema = ''public'' OR (trigger_schema = ''auth'' AND trigger_name = ''on_auth_user_created'') UNION ALL SELECT ''View'', table_name FROM information_schema.views WHERE table_schema = ''public'') AS all_objects ORDER BY type, name;\")",
+      "Bash(PGPASSWORD=qwer1234 psql -h db.dqkghhlnnskjfwntdtor.supabase.co -U postgres -d postgres -c \"SELECT schemaname, tablename FROM pg_tables WHERE schemaname = ''public'' ORDER BY tablename;\")",
+      "Bash(vercel env add:*)",
+      "Bash(vercel login:*)",
+      "Bash(git -C \"d:\\AI\\claude01\\sso-system\" status --short)",
+      "Bash(git branch:*)",
+      "Bash(npm test:*)",
+      "Bash(timeout 5 node:*)",
+      "Bash(node:*)",
+      "Bash(awk:*)",
+      "Bash(git fetch:*)"
     ],
     "deny": [],
     "ask": []

@@ -266,4 +266,110 @@ router.get('/apps', async (req, res) => {
   }
 });
 
+// ============================================================================
+// POST /api/v1/token/refresh
+// ============================================================================
+// Refresh access token using refresh token
+router.post('/token/refresh', async (req, res) => {
+  try {
+    const { refresh_token, app_id } = req.body;
+
+    if (!refresh_token || !app_id) {
+      return res.status(400).json({
+        error: 'invalid_request',
+        message: 'refresh_token and app_id are required'
+      });
+    }
+
+    // Verify app exists and is active
+    const { data: app, error: appError } = await supabaseAdmin
+      .from('apps')
+      .select('id, name, is_active')
+      .eq('api_key', app_id)
+      .eq('is_active', true)
+      .single();
+
+    if (appError || !app) {
+      return res.status(401).json({
+        error: 'invalid_client',
+        message: 'Invalid app_id'
+      });
+    }
+
+    // Refresh session using Supabase
+    const { data, error } = await supabaseAdmin.auth.refreshSession({
+      refresh_token
+    });
+
+    if (error || !data.session) {
+      return res.status(401).json({
+        error: 'invalid_grant',
+        message: 'Invalid or expired refresh token'
+      });
+    }
+
+    res.json({
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+      expires_in: 3600,
+      token_type: 'Bearer'
+    });
+
+  } catch (err) {
+    console.error('Token refresh error:', err);
+    res.status(500).json({
+      error: 'server_error',
+      message: err.message
+    });
+  }
+});
+
+// ============================================================================
+// POST /api/v1/token/revoke
+// ============================================================================
+// Revoke access token (logout)
+router.post('/token/revoke', async (req, res) => {
+  try {
+    // Extract token from Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        error: 'invalid_request',
+        message: 'Authorization header required'
+      });
+    }
+
+    const token = authHeader.substring(7);
+
+    // Get user from token
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+
+    if (userError || !user) {
+      return res.status(401).json({
+        error: 'invalid_token',
+        message: 'Invalid access token'
+      });
+    }
+
+    // Sign out user (revokes all sessions)
+    const { error: signOutError } = await supabaseAdmin.auth.admin.signOut(user.id);
+
+    if (signOutError) {
+      throw signOutError;
+    }
+
+    res.json({
+      success: true,
+      message: 'Token revoked successfully'
+    });
+
+  } catch (err) {
+    console.error('Token revoke error:', err);
+    res.status(500).json({
+      error: 'server_error',
+      message: err.message
+    });
+  }
+});
+
 export default router;

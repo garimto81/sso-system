@@ -38,3 +38,10 @@ build/
 *.key
 *.pem
 secrets/
+.env.production
+
+# Test files
+test-*.json
+nul
+**/nul
+decode-token.js
