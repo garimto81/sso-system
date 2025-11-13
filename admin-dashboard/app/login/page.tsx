@@ -9,10 +9,40 @@
 import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
+/**
+ * Validate redirect URL to prevent open redirect vulnerability
+ * Only allow relative URLs that start with '/'
+ */
+function isValidRedirectUrl(url: string): boolean {
+  try {
+    // Allow only relative URLs (starting with /)
+    if (!url.startsWith('/')) {
+      return false
+    }
+
+    // Disallow protocol-relative URLs (//evil.com)
+    if (url.startsWith('//')) {
+      return false
+    }
+
+    // Disallow URLs with protocol (http://, https://, javascript:, etc.)
+    if (url.includes(':')) {
+      return false
+    }
+
+    return true
+  } catch {
+    return false
+  }
+}
+
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirect = searchParams.get('redirect') || '/admin'
+  const rawRedirect = searchParams.get('redirect') || '/admin'
+
+  // ✅ Validate redirect URL to prevent open redirect attacks
+  const redirect = isValidRedirectUrl(rawRedirect) ? rawRedirect : '/admin'
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -41,9 +71,9 @@ function LoginForm() {
       // ✅ Cookie is set by server (httpOnly)
       // No need to manually store token!
 
-      // Redirect to admin dashboard
-      // Use window.location for full page reload to ensure cookie is sent
-      window.location.href = redirect
+      // ✅ Use Next.js router for client-side navigation (SPA-like)
+      // Only use window.location.href if absolutely necessary
+      router.push(redirect)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
     } finally {
