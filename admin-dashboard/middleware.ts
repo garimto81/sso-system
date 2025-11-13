@@ -1,9 +1,12 @@
 /**
- * ✅ P1-3: JWT Verification in Middleware
+ * ✅ P1-3: JWT Verification in Middleware (JWKS-based)
  * ✅ P0-1: httpOnly Cookie-Based Auth
  *
  * Next.js Middleware runs on Edge Runtime
  * Validates JWT tokens before allowing access to protected routes
+ *
+ * IMPORTANT: Supabase Auth tokens use asymmetric signing (RS256/ES256)
+ * Must verify using JWKS endpoint, NOT a symmetric secret
  */
 
 import { NextResponse } from 'next/server'
@@ -12,32 +15,12 @@ import * as jose from 'jose' // Use jose for Edge Runtime compatibility
 
 const TOKEN_NAME = 'sso_admin_token'
 
-// DEBUG: Log all environment variables
-console.log('[Middleware INIT] ==================== ENVIRONMENT DEBUG ====================')
-console.log('[Middleware INIT] All env keys:', Object.keys(process.env))
-console.log('[Middleware INIT] SUPABASE_JWT_SECRET exists:', 'SUPABASE_JWT_SECRET' in process.env)
-console.log('[Middleware INIT] SUPABASE_JWT_SECRET value:', process.env.SUPABASE_JWT_SECRET ? `EXISTS (length: ${process.env.SUPABASE_JWT_SECRET.length})` : 'UNDEFINED')
-console.log('[Middleware INIT] SUPABASE_JWT_SECRET first 20 chars:', process.env.SUPABASE_JWT_SECRET?.substring(0, 20) || 'N/A')
-console.log('[Middleware INIT] NODE_ENV:', process.env.NODE_ENV)
-console.log('[Middleware INIT] VERCEL_ENV:', process.env.VERCEL_ENV)
-console.log('[Middleware INIT] =================================================================')
-
-// Use Supabase JWT secret (same as backend Supabase instance)
-const JWT_SECRET_STRING = process.env.SUPABASE_JWT_SECRET || 'super-secret-jwt-token-with-at-least-32-characters-long'
-
-console.log('[Middleware INIT] JWT_SECRET_STRING:', {
-  value: JWT_SECRET_STRING,
-  length: JWT_SECRET_STRING.length,
-  firstChars: JWT_SECRET_STRING.substring(0, 20),
-  isDefault: JWT_SECRET_STRING === 'super-secret-jwt-token-with-at-least-32-characters-long',
-})
-
-const JWT_SECRET = new TextEncoder().encode(JWT_SECRET_STRING)
-
-console.log('[Middleware INIT] JWT_SECRET (encoded):', {
-  byteLength: JWT_SECRET.byteLength,
-  type: JWT_SECRET.constructor.name,
-})
+// Supabase JWKS endpoint for verifying asymmetrically signed JWTs
+// See: https://supabase.com/docs/guides/auth/server-side/nextjs
+const SUPABASE_URL = 'https://dqkghhlnnskjfwntdtor.supabase.co'
+const JWKS = jose.createRemoteJWKSet(
+  new URL(`${SUPABASE_URL}/auth/v1/.well-known/jwks.json`)
+)
 
 // Public routes that don't require authentication
 const PUBLIC_ROUTES = [
@@ -52,61 +35,22 @@ const PUBLIC_ROUTES = [
 const PROTECTED_API_ROUTES = ['/api/admin']
 
 /**
- * Verify JWT token signature and expiration
- * ✅ P1-3: Proper JWT verification
+ * Verify JWT token signature and expiration using JWKS
+ * ✅ P1-3: Proper JWT verification with asymmetric keys
  */
 async function verifyToken(token: string): Promise<jose.JWTPayload | null> {
-  console.log('[Middleware] ==================== JWT VERIFICATION START ====================')
-  console.log('[Middleware] Token length:', token?.length || 0)
-  console.log('[Middleware] Token first 30 chars:', token?.substring(0, 30) || 'N/A')
-  console.log('[Middleware] JWT_SECRET_STRING source:', process.env.SUPABASE_JWT_SECRET ? 'FROM ENVIRONMENT' : 'USING DEFAULT FALLBACK')
-  console.log('[Middleware] JWT_SECRET_STRING length:', JWT_SECRET_STRING.length)
-  console.log('[Middleware] JWT_SECRET_STRING first 30 chars:', JWT_SECRET_STRING.substring(0, 30))
-  console.log('[Middleware] JWT_SECRET (Uint8Array) length:', JWT_SECRET.byteLength)
-
   try {
-    console.log('[Middleware] Attempting jose.jwtVerify...')
-    const { payload } = await jose.jwtVerify(token, JWT_SECRET, {
-      algorithms: ['HS256'],
-    })
+    // Verify JWT using Supabase's public keys from JWKS endpoint
+    const { payload } = await jose.jwtVerify(token, JWKS)
 
-    console.log('[Middleware] ✅ JWT verification SUCCESSFUL')
-    console.log('[Middleware] Payload:', {
-      sub: payload.sub,
-      email: payload.email,
-      exp: payload.exp,
-      iat: payload.iat,
-    })
-
-    // Additional validation
+    // Validate required fields
     if (!payload.sub || !payload.exp) {
-      console.error('[Middleware] ❌ Invalid token payload - missing sub or exp')
-      console.error('[Middleware] Payload:', payload)
       return null
     }
 
-    // Check if token is expired (jose already does this, but double-check)
-    if (payload.exp && payload.exp < Date.now() / 1000) {
-      console.error('[Middleware] ❌ Token expired')
-      console.error('[Middleware] Expiration:', {
-        exp: payload.exp,
-        now: Date.now() / 1000,
-        diff: Date.now() / 1000 - payload.exp,
-      })
-      return null
-    }
-
-    console.log('[Middleware] ==================== JWT VERIFICATION END (SUCCESS) ====================')
     return payload
   } catch (error) {
-    console.error('[Middleware] ❌ ❌ ❌ JWT VERIFICATION FAILED ❌ ❌ ❌')
-    console.error('[Middleware] Error type:', error instanceof Error ? error.name : typeof error)
-    console.error('[Middleware] Error message:', error instanceof Error ? error.message : String(error))
-    console.error('[Middleware] Error stack:', error instanceof Error ? error.stack : 'N/A')
-    console.error('[Middleware] Token was provided:', !!token)
-    console.error('[Middleware] Secret from env:', !!process.env.SUPABASE_JWT_SECRET)
-    console.error('[Middleware] Using fallback secret:', !process.env.SUPABASE_JWT_SECRET)
-    console.error('[Middleware] ==================== JWT VERIFICATION END (FAILED) ====================')
+    // Token verification failed (invalid signature, expired, etc.)
     return null
   }
 }

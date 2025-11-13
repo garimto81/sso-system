@@ -90,7 +90,7 @@ const nextConfig = {
   // ⚠️ IMPORTANT: Edge Runtime (middleware) requires explicit env exposure
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-    SUPABASE_JWT_SECRET: process.env.SUPABASE_JWT_SECRET, // Required for JWT verification in middleware
+    // Note: JWKS-based JWT verification uses public endpoint, no secret needed
   },
 
   // Production optimizations
