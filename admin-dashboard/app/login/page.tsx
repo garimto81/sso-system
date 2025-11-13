@@ -6,7 +6,7 @@
  * ✅ No localStorage token usage
  */
 
-import { useState, Suspense } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 /**
@@ -38,16 +38,22 @@ function isValidRedirectUrl(url: string): boolean {
 
 function LoginForm() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const rawRedirect = searchParams.get('redirect') || '/admin'
-
-  // ✅ Validate redirect URL to prevent open redirect attacks
-  const redirect = isValidRedirectUrl(rawRedirect) ? rawRedirect : '/admin'
-
+  const [redirect, setRedirect] = useState('/admin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // ✅ Get redirect from URL on mount (client-side only)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const rawRedirect = params.get('redirect') || '/admin'
+      // ✅ Validate redirect URL to prevent open redirect attacks
+      const validRedirect = isValidRedirectUrl(rawRedirect) ? rawRedirect : '/admin'
+      setRedirect(validRedirect)
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
