@@ -3,7 +3,7 @@
  * Tests actual production deployment to diagnose the issue
  */
 
-const PROD_URL = 'https://sso-frontend-dvfbqjetd-garimto81s-projects.vercel.app'
+const PROD_URL = 'https://sso-frontend-cv7kd72tq-garimto81s-projects.vercel.app'
 const BACKEND_URL = 'https://sso-backend-eight.vercel.app'
 
 async function checkProduction() {

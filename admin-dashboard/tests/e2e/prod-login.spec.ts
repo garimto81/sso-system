@@ -3,7 +3,7 @@
  * Verifies SSO Admin Dashboard production deployment
  *
  * Production URLs:
- * - Frontend: https://sso-frontend-iktoi87px-garimto81s-projects.vercel.app
+ * - Frontend: https://sso-frontend-fs460r4n3-garimto81s-projects.vercel.app
  * - Backend: https://sso-backend-eight.vercel.app
  *
  * Test Scenario:
@@ -25,7 +25,7 @@ const PROD_ADMIN = {
 
 // Production URLs
 const PROD_FRONTEND_URL =
-  'https://sso-frontend-dvfbqjetd-garimto81s-projects.vercel.app'
+  'https://sso-frontend-fs460r4n3-garimto81s-projects.vercel.app'
 const PROD_BACKEND_URL = 'https://sso-backend-eight.vercel.app'
 
 // Configure test for production environment (must be at top level)
