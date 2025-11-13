@@ -11,7 +11,7 @@
  * @module middleware/adminRateLimiter
  */
 
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { logger } from '../utils/logger.js';
 
 /**
@@ -35,8 +35,9 @@ export const adminRateLimiter = rateLimit({
   legacyHeaders: false,
 
   // Use user ID for rate limiting (not IP)
+  // If no user, use ipKeyGenerator helper for IPv6 compatibility
   keyGenerator: (req) => {
-    return req.user?.id || req.ip;
+    return req.user?.id || ipKeyGenerator(req);
   },
 
   // Custom handler for rate limit exceeded
