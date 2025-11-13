@@ -11,11 +11,33 @@ import type { NextRequest } from 'next/server'
 import * as jose from 'jose' // Use jose for Edge Runtime compatibility
 
 const TOKEN_NAME = 'sso_admin_token'
+
+// DEBUG: Log all environment variables
+console.log('[Middleware INIT] All environment variables:', {
+  allEnvKeys: Object.keys(process.env),
+  SUPABASE_JWT_SECRET_raw: process.env.SUPABASE_JWT_SECRET,
+  SUPABASE_JWT_SECRET_type: typeof process.env.SUPABASE_JWT_SECRET,
+  SUPABASE_JWT_SECRET_exists: 'SUPABASE_JWT_SECRET' in process.env,
+  NODE_ENV: process.env.NODE_ENV,
+  VERCEL_ENV: process.env.VERCEL_ENV,
+})
+
 // Use Supabase JWT secret (same as backend Supabase instance)
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.SUPABASE_JWT_SECRET ||
-    'super-secret-jwt-token-with-at-least-32-characters-long'
-)
+const JWT_SECRET_STRING = process.env.SUPABASE_JWT_SECRET || 'super-secret-jwt-token-with-at-least-32-characters-long'
+
+console.log('[Middleware INIT] JWT_SECRET_STRING:', {
+  value: JWT_SECRET_STRING,
+  length: JWT_SECRET_STRING.length,
+  firstChars: JWT_SECRET_STRING.substring(0, 20),
+  isDefault: JWT_SECRET_STRING === 'super-secret-jwt-token-with-at-least-32-characters-long',
+})
+
+const JWT_SECRET = new TextEncoder().encode(JWT_SECRET_STRING)
+
+console.log('[Middleware INIT] JWT_SECRET (encoded):', {
+  byteLength: JWT_SECRET.byteLength,
+  type: JWT_SECRET.constructor.name,
+})
 
 // Public routes that don't require authentication
 const PUBLIC_ROUTES = [
