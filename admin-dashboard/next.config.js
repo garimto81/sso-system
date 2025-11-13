@@ -12,7 +12,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'", // Tailwind requires unsafe-inline
       "img-src 'self' data: https:",
       "font-src 'self' data:",
-      "connect-src 'self' " + (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'),
+      "connect-src 'self' " + ((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000').trim()),
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
@@ -75,7 +75,11 @@ const nextConfig = {
                 value: 'http',
               },
             ],
-            destination: 'https://sso-admin.example.com/:path*',
+            // Use VERCEL_URL environment variable (automatically set by Vercel)
+            // Falls back to NEXT_PUBLIC_FRONTEND_URL if not on Vercel
+            destination: process.env.VERCEL_URL
+              ? `https://${process.env.VERCEL_URL}/:path*`
+              : (process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://localhost:3001/:path*'),
             permanent: true,
           },
         ]

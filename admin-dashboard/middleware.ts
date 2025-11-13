@@ -74,8 +74,16 @@ export async function middleware(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // ✅ Prevent infinite redirect loop: Don't redirect if already on login page
+    if (pathname === '/login') {
+      return NextResponse.next()
+    }
+
     const loginUrl = new URL('/login', request.url)
-    loginUrl.searchParams.set('redirect', pathname)
+    // ✅ Only set redirect param for internal paths (prevent open redirect)
+    if (pathname.startsWith('/') && !pathname.startsWith('//')) {
+      loginUrl.searchParams.set('redirect', pathname)
+    }
     return NextResponse.redirect(loginUrl)
   }
 
