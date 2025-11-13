@@ -71,9 +71,10 @@ function LoginForm() {
       // ✅ Cookie is set by server (httpOnly)
       // No need to manually store token!
 
-      // ✅ Use Next.js router for client-side navigation (SPA-like)
-      // Only use window.location.href if absolutely necessary
-      router.push(redirect)
+      // ✅ MUST use window.location.href for full page reload
+      // This ensures the cookie is sent to middleware on next request
+      // router.push() causes issues in production as cookie might not be sent
+      window.location.href = redirect
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
     } finally {
