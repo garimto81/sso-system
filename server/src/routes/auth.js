@@ -16,26 +16,48 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    console.log('[LOGIN] Attempt:', { email, timestamp: new Date().toISOString() });
+
     if (!email || !password) {
+      console.log('[LOGIN] Missing credentials');
       return res.status(400).json({
         error: 'Missing credentials',
         message: 'Email and password are required'
       });
     }
 
+    console.log('[LOGIN] Calling Supabase signInWithPassword...');
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
     });
 
     if (error) {
+      console.log('[LOGIN] Supabase auth error:', {
+        email,
+        error: error.message,
+        code: error.status,
+        timestamp: new Date().toISOString()
+      });
       return res.status(401).json({
         error: 'Invalid credentials',
-        message: error.message
+        message: error.message,
+        debug: {
+          email,
+          errorCode: error.status,
+          errorMessage: error.message
+        }
       });
     }
 
+    console.log('[LOGIN] Supabase auth SUCCESS:', {
+      userId: data.user.id,
+      email: data.user.email,
+      timestamp: new Date().toISOString()
+    });
+
     // Fetch user profile to get role (use admin client to bypass RLS)
+    console.log('[LOGIN] Fetching user profile...');
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('role')
@@ -43,12 +65,28 @@ router.post('/login', async (req, res) => {
       .single();
 
     if (profileError) {
-      console.error('Profile fetch error:', profileError);
+      console.error('[LOGIN] Profile fetch error:', {
+        userId: data.user.id,
+        error: profileError.message,
+        code: profileError.code,
+        timestamp: new Date().toISOString()
+      });
       return res.status(500).json({
         error: 'Failed to fetch user profile',
-        message: profileError.message
+        message: profileError.message,
+        debug: {
+          userId: data.user.id,
+          errorMessage: profileError.message
+        }
       });
     }
+
+    console.log('[LOGIN] Login COMPLETE:', {
+      userId: data.user.id,
+      email: data.user.email,
+      role: profile.role,
+      timestamp: new Date().toISOString()
+    });
 
     res.json({
       success: true,
@@ -62,10 +100,17 @@ router.post('/login', async (req, res) => {
     });
 
   } catch (err) {
-    console.error('Login error:', err);
+    console.error('[LOGIN] Unexpected error:', {
+      error: err.message,
+      stack: err.stack,
+      timestamp: new Date().toISOString()
+    });
     res.status(500).json({
       error: 'Internal server error',
-      message: err.message
+      message: err.message,
+      debug: {
+        errorMessage: err.message
+      }
     });
   }
 });
